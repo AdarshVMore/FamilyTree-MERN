@@ -1,11 +1,13 @@
 import logo from "./logo.svg";
 import "./App.css";
-import FamilyTree from "./pages/FamilyTree.tsx";
+// import FamilyTreeMain from "./pages/FamilyTreeMain.tsx";
+import LoginPage from "./pages/Login.tsx";
 
 function App() {
   return (
     <div className="App">
-      <FamilyTree />
+      {/* <FamilyTreeMain /> */}
+      <LoginPage />
     </div>
   );
 }

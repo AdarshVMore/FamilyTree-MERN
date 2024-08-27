@@ -5,10 +5,14 @@ import FamilyTree from "../components/FamilyTree";
 
 function FamilyTreeMain() {
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50">
       <TopNavbar />
-      <SidebarAndToolbar />
-      <FamilyTree />
+      <div className="flex">
+        <SidebarAndToolbar />
+        <div className="flex-1 p-4">
+          <FamilyTree />
+        </div>
+      </div>
     </div>
   );
 }

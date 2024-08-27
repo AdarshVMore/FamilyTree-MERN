@@ -1,13 +1,69 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import loginImg from "../assets/login-img.png"; // Replace with your image path
 
 const LoginPage = () => {
-  // State to manage the form type (login or sign up)
   const [isSignUp, setIsSignUp] = useState(false);
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
+  const fetchUserProfile = async () => {
+    try {
+      const response = await axios.get("/api/auth/profile");
+      console.log("User profile data:", response.data);
+    } catch (error) {
+      console.error(
+        "Error fetching user profile:",
+        error.response?.data?.error || error.message
+      );
+    }
+  };
+
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
   // Function to handle toggle between login and sign up
   const handleToggle = () => {
     setIsSignUp((prev) => !prev);
+  };
+
+  // Function to handle form submission for both login and signup
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      if (isSignUp) {
+        // Sign Up Request
+        const response = await axios.post(
+          "http://localhost:5000/api/auth/register",
+          {
+            username,
+            email,
+            password,
+          }
+        );
+        console.log("Sign Up Success:", response.data);
+        // Handle success (e.g., redirect or show a message)
+      } else {
+        // Login Request
+        const response = await axios.post(
+          "http://localhost:5000/api/auth/login",
+          {
+            email,
+            password,
+          }
+        );
+        console.log("Login Success:", response.data);
+        // Handle success (e.g., save token, redirect)
+      }
+    } catch (error) {
+      console.error(
+        "Error:",
+        error.response ? error.response.data : error.message
+      );
+      // Handle error (e.g., show error message to user)
+    }
   };
 
   return (
@@ -28,37 +84,48 @@ const LoginPage = () => {
             <h1 className="text-white text-4xl font-bold mb-8">
               {isSignUp ? "Sign Up" : "Log In"}
             </h1>
-            <form className="flex flex-col space-y-6">
-              <div>
-                <label className="block text-white text-lg mb-2">
-                  Username
-                </label>
-                <input
-                  type="text"
-                  className="w-full p-3 text-white border border-white rounded bg-transparent focus:outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="Enter your username"
-                />
-              </div>
-              <div>
-                <label className="block text-white text-lg mb-2">
-                  {isSignUp ? "Email" : "Password"}
-                </label>
-                <input
-                  type={isSignUp ? "email" : "password"}
-                  className="w-full p-3 text-white border border-white rounded bg-transparent focus:outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder={`Enter your ${isSignUp ? "email" : "password"}`}
-                />
-              </div>
-              {/* {!isSignUp && (
-                <div className="text-right">
-                  <a
-                    href="#"
-                    className="text-gray-400 hover:text-white text-sm"
-                  >
-                    Forgot Password?
-                  </a>
+            <form className="flex flex-col space-y-6" onSubmit={handleSubmit}>
+              {isSignUp && (
+                <div>
+                  <label className="block text-white text-lg mb-2">
+                    Username
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full p-3 text-white border border-white rounded bg-transparent focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="Enter your username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                  />
                 </div>
-              )} */}
+              )}
+              <div>
+                <label className="block text-white text-lg mb-2">
+                  {isSignUp ? "Email" : "Email"}
+                </label>
+                <input
+                  type="email"
+                  className="w-full p-3 text-white border border-white rounded bg-transparent focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-white text-lg mb-2">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  className="w-full p-3 text-white border border-white rounded bg-transparent focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
               <button
                 type="submit"
                 className="w-full bg-green-600 text-white py-3 rounded shadow-lg hover:bg-green-700 transition duration-300"

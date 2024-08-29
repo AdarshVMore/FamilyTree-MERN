@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import loginImg from "../assets/login-img.png"; // Replace with your image path
 
 const LoginPage = () => {
@@ -7,22 +8,8 @@ const LoginPage = () => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate(); // Initialize useNavigate hook
 
-  const fetchUserProfile = async () => {
-    try {
-      const response = await axios.get("/api/auth/profile");
-      console.log("User profile data:", response.data);
-    } catch (error) {
-      console.error(
-        "Error fetching user profile:",
-        error.response?.data?.error || error.message
-      );
-    }
-  };
-
-  useEffect(() => {
-    fetchUserProfile();
-  }, []);
   // Function to handle toggle between login and sign up
   const handleToggle = () => {
     setIsSignUp((prev) => !prev);
@@ -44,7 +31,7 @@ const LoginPage = () => {
           }
         );
         console.log("Sign Up Success:", response.data);
-        // Handle success (e.g., redirect or show a message)
+        // Optionally handle post-signup actions
       } else {
         // Login Request
         const response = await axios.post(
@@ -56,6 +43,7 @@ const LoginPage = () => {
         );
         console.log("Login Success:", response.data);
         // Handle success (e.g., save token, redirect)
+        navigate("/tree"); // Redirect to /tree route
       }
     } catch (error) {
       console.error(
@@ -101,9 +89,7 @@ const LoginPage = () => {
                 </div>
               )}
               <div>
-                <label className="block text-white text-lg mb-2">
-                  {isSignUp ? "Email" : "Email"}
-                </label>
+                <label className="block text-white text-lg mb-2">Email</label>
                 <input
                   type="email"
                   className="w-full p-3 text-white border border-white rounded bg-transparent focus:outline-none focus:ring-2 focus:ring-green-500"

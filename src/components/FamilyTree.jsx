@@ -1,9 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Tree from "react-d3-tree";
-// import { TreeModal } from "./TreeModal"; // Ensure this import is correct or replace with your modal implementation
-import TreeModal from "./TreeModal";
+import axios from "axios";
 
-const renderCustomNodeElement = ({ nodeDatum, toggleNode }) => {
+const renderCustomNodeElement = ({ nodeDatum }) => {
   return (
     <g>
       <rect
@@ -16,7 +15,7 @@ const renderCustomNodeElement = ({ nodeDatum, toggleNode }) => {
         strokeWidth="1.5"
       />
       <image
-        href={nodeDatum.attributes.img}
+        href={nodeDatum.attributes?.img}
         x="-50"
         y="-20"
         width="40"
@@ -27,24 +26,38 @@ const renderCustomNodeElement = ({ nodeDatum, toggleNode }) => {
         {nodeDatum.name}
       </text>
       <text fill="#4caf50" x="0" y="10" textAnchor="middle" fontSize="12">
-        DOB: {nodeDatum.attributes.DOB}
+        DOB: {nodeDatum.attributes?.DOB}
       </text>
-      <rect
-        width="120"
-        height="60"
-        x="-60"
-        y="-30"
-        fill="transparent"
-        onClick={() => toggleNode()}
-        style={{ cursor: "pointer" }}
-      />
     </g>
   );
 };
 
 const FamilyTree = () => {
-  // Updated family tree data
+  const [familyTreeData, setFamilyTreeData] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    dob: "",
+    relation: "",
+    parentId: "",
+  });
+  const [userId, setUserId] = useState("66cb81f4ce84744020f78195"); // Example user ID
+  const fetchFamilyTree = async () => {
+    try {
+      const response = await axios.get(
+        `http://localhost:5000/api/families/${userId}`
+      );
+      setFamilyTreeData(response.data);
+      console.log(response.data);
+    } catch (error) {
+      console.error("Error fetching family tree data:", error);
+    }
+  };
+  useEffect(() => {
+    // Fetch family tree data from the backend
+
+    fetchFamilyTree();
+  }, [userId]);
 
   const handleNodeClick = (nodeData) => {
     setSelectedNode(nodeData);
@@ -53,143 +66,45 @@ const FamilyTree = () => {
   const handleClosePopup = () => {
     setSelectedNode(null);
   };
-  const familyTreeData = {
-    user_id: "123456",
-    member_id: "1",
-    name: "William Doe",
-    attributes: { DOB: "1920-01-15" },
-    children: [
-      {
-        member_id: "1.1",
-        name: "George Doe",
-        attributes: { DOB: "1945-09-18" },
-        children: [
-          {
-            member_id: "1.1.1",
-            name: "Richard Doe",
-            attributes: { DOB: "1970-03-12" },
-            children: [
-              {
-                member_id: "1.1.1.1",
-                name: "John Doe",
-                attributes: { DOB: "1995-10-01" },
-                children: [
-                  {
-                    member_id: "1.1.1.1.1",
-                    name: "Lucas Doe",
-                    attributes: { DOB: "2020-08-14" },
-                  },
-                  {
-                    member_id: "1.1.1.1.2",
-                    name: "Sophia Doe",
-                    attributes: { DOB: "2023-04-27" },
-                  },
-                ],
-              },
-              {
-                member_id: "1.1.1.2",
-                name: "Sarah Doe",
-                attributes: { DOB: "1998-02-20" },
-                children: [
-                  {
-                    member_id: "1.1.1.2.1",
-                    name: "Ella Smith",
-                    attributes: { DOB: "2022-09-30" },
-                  },
-                ],
-              },
-            ],
+
+  const handleInputChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+
+    const { name, dob, relation, parentId } = formData; // Destructure formData
+
+    const familyData = {
+      name,
+      dob,
+      relation,
+      parentId,
+      user_id: userId,
+    };
+
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/families",
+        familyData,
+        {
+          headers: {
+            "Content-Type": "application/json",
           },
-          {
-            member_id: "1.1.2",
-            name: "Robert Doe",
-            attributes: { DOB: "1973-08-30" },
-            children: [
-              {
-                member_id: "1.1.2.1",
-                name: "James Doe",
-                attributes: { DOB: "2000-04-22" },
-              },
-              {
-                member_id: "1.1.2.2",
-                name: "Olivia Doe",
-                attributes: { DOB: "2003-07-09" },
-              },
-            ],
-          },
-          {
-            member_id: "1.1.3",
-            name: "Patricia Doe",
-            attributes: { DOB: "1976-12-21" },
-            children: [
-              {
-                member_id: "1.1.3.1",
-                name: "Emma Johnson",
-                attributes: { DOB: "2005-05-17" },
-              },
-              {
-                member_id: "1.1.3.2",
-                name: "Noah Johnson",
-                attributes: { DOB: "2008-11-11" },
-              },
-            ],
-          },
-        ],
-      },
-      {
-        member_id: "1.2",
-        name: "Charles Doe",
-        attributes: { DOB: "1948-12-27" },
-        children: [
-          {
-            member_id: "1.2.1",
-            name: "Henry Doe",
-            attributes: { DOB: "1975-09-05" },
-            children: [
-              {
-                member_id: "1.2.1.1",
-                name: "Lily Doe",
-                attributes: { DOB: "2001-02-14" },
-              },
-              {
-                member_id: "1.2.1.2",
-                name: "Ethan Doe",
-                attributes: { DOB: "2004-10-23" },
-              },
-            ],
-          },
-          {
-            member_id: "1.2.2",
-            name: "Margaret Doe",
-            attributes: { DOB: "1978-06-16" },
-            children: [
-              {
-                member_id: "1.2.2.1",
-                name: "Zoe Brown",
-                attributes: { DOB: "2006-07-07" },
-              },
-            ],
-          },
-          {
-            member_id: "1.2.3",
-            name: "Thomas Doe",
-            attributes: { DOB: "1980-11-01" },
-            children: [
-              {
-                member_id: "1.2.3.1",
-                name: "Daniel Doe",
-                attributes: { DOB: "2010-01-05" },
-              },
-              {
-                member_id: "1.2.3.2",
-                name: "Grace Doe",
-                attributes: { DOB: "2013-06-22" },
-              },
-            ],
-          },
-        ],
-      },
-    ],
+          withCredentials: true, // Include cookies in the request
+        }
+      );
+
+      console.log("Family member added:", response.data);
+      fetchFamilyTree(); // Refresh family tree after adding a member
+    } catch (error) {
+      console.error("Error adding family member:", error);
+      alert("Error adding family member. Please try again.");
+    }
   };
 
   const [translate] = useState({ x: 400, y: 100 });
@@ -204,30 +119,87 @@ const FamilyTree = () => {
         overflow: "hidden",
       }}
     >
-      <Tree
-        data={familyTreeData}
-        translate={translate}
-        orientation="vertical"
-        pathFunc="elbow"
-        collapsible={true}
-        zoomable={true}
-        pan={true}
-        zoom={0.1}
-        scaleExtent={{ min: 0.1, max: 2 }}
-        nodeSize={{ x: 200, y: 100 }}
-        renderCustomNodeElement={(rd3tProps) =>
-          renderCustomNodeElement({
-            ...rd3tProps,
-            toggleNode: () => handleNodeClick(rd3tProps.nodeDatum),
-          })
-        }
-        styles={{
-          links: {
-            stroke: "#1a237e",
-            strokeWidth: 3,
-          },
+      {/* Form to add a new family member */}
+      <div
+        style={{
+          padding: "20px",
+          backgroundColor: "#ffffff",
+          borderRadius: "8px",
+          boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+          marginBottom: "20px",
         }}
-      />
+      >
+        <h3>Add Family Member</h3>
+        <form onSubmit={handleFormSubmit}>
+          <div>
+            <label>Name:</label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          <div>
+            <label>Date of Birth:</label>
+            <input
+              type="date"
+              name="dob"
+              value={formData.dob}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          <div>
+            <label>Relation:</label>
+            <input
+              type="text"
+              name="relation"
+              value={formData.relation}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          <div>
+            <label>Parent ID (if any):</label>
+            <input
+              type="text"
+              name="parentId"
+              value={formData.parentId}
+              onChange={handleInputChange}
+            />
+          </div>
+          <button type="submit">Add Member</button>
+        </form>
+      </div>
+
+      {familyTreeData && (
+        <Tree
+          data={familyTreeData}
+          translate={translate}
+          orientation="vertical"
+          pathFunc="elbow"
+          collapsible={false}
+          zoomable={true}
+          pan={true}
+          zoom={0.1}
+          scaleExtent={{ min: 0.1, max: 2 }}
+          nodeSize={{ x: 200, y: 100 }}
+          renderCustomNodeElement={(rd3tProps) =>
+            renderCustomNodeElement({
+              ...rd3tProps,
+              toggleNode: () => handleNodeClick(rd3tProps.nodeDatum),
+            })
+          }
+          styles={{
+            links: {
+              stroke: "#1a237e",
+              strokeWidth: 3,
+            },
+          }}
+        />
+      )}
 
       {/* Popup for node details */}
       {selectedNode && (

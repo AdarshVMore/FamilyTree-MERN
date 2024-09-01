@@ -91,14 +91,11 @@ const FamilyTree = () => {
 
   const getTokenFromCookies = () => {
     const name = "token=";
-    const decodedCookie = document.cookie;
-    console.log("cookie is ", document.cookie);
+    const decodedCookie = decodeURIComponent(document.cookie);
     const cookies = decodedCookie.split(";");
-    console.log(cookies);
     for (let i = 0; i < cookies.length; i++) {
       let cookie = cookies[i].trim();
       if (cookie.indexOf(name) === 0) {
-        console.log(name.length, cookie.length);
         return cookie.substring(name.length, cookie.length);
       }
     }
@@ -108,26 +105,17 @@ const FamilyTree = () => {
   useEffect(() => {
     const fetchFamilyTreeData = async () => {
       try {
-        const token = getTokenFromCookies();
-        console.log(token);
-
-        if (!token) {
-          throw new Error("Token not found");
-        }
-
+        // No need to manually retrieve the token from cookies; it is automatically included when withCredentials is true
         const config = {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          withCredentials: true,
+          withCredentials: true, // Include cookies in the request
         };
 
-        console.log("token sent.....");
-
+        // Make a request to fetch family data
         const response = await axios.get(
           "http://localhost:5000/api/families",
           config
         );
+
         setFamilyTreeData(response.data);
       } catch (error) {
         console.error("Error fetching family tree data:", error);

@@ -8,7 +8,7 @@ function FamilyTreeMain() {
     <div className="min-h-screen bg-gray-50">
       <TopNavbar />
       <div className="flex">
-        <SidebarAndToolbar />
+        {/* <SidebarAndToolbar /> */}
         <div className="flex-1">
           <FamilyTree />
         </div>

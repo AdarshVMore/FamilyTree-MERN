@@ -1,85 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Tree from "react-d3-tree";
-import { FaArrowDown } from "react-icons/fa";
-import { FaArrowUp } from "react-icons/fa";
+import axios from "axios"; // Import axios for API calls
+import { FaArrowDown, FaArrowUp } from "react-icons/fa";
+import Cookies from "js-cookie";
 
 // Sample Family Tree Data
-const familyTreeData = {
-  name: "William Doe",
-  attributes: { DOB: "1920-01-15" },
-  children: [
-    {
-      name: "George Doe",
-      attributes: { DOB: "1945-09-18" },
-      children: [
-        {
-          name: "Richard Doe",
-          attributes: { DOB: "1970-03-12" },
-          children: [
-            {
-              name: "John Doe",
-              attributes: { DOB: "1995-10-01" },
-              children: [
-                { name: "Lucas Doe", attributes: { DOB: "2020-08-14" } },
-                { name: "Sophia Doe", attributes: { DOB: "2023-04-27" } },
-              ],
-            },
-            {
-              name: "Sarah Doe",
-              attributes: { DOB: "1998-02-20" },
-              children: [
-                { name: "Ella Smith", attributes: { DOB: "2022-09-30" } },
-              ],
-            },
-          ],
-        },
-        {
-          name: "Robert Doe",
-          attributes: { DOB: "1973-08-30" },
-          children: [
-            { name: "James Doe", attributes: { DOB: "2000-04-22" } },
-            { name: "Olivia Doe", attributes: { DOB: "2003-07-09" } },
-          ],
-        },
-        {
-          name: "Patricia Doe",
-          attributes: { DOB: "1976-12-21" },
-          children: [
-            { name: "Emma Johnson", attributes: { DOB: "2005-05-17" } },
-            { name: "Noah Johnson", attributes: { DOB: "2008-11-11" } },
-          ],
-        },
-      ],
-    },
-    {
-      name: "Charles Doe",
-      attributes: { DOB: "1948-12-27" },
-      children: [
-        {
-          name: "Henry Doe",
-          attributes: { DOB: "1975-09-05" },
-          children: [
-            { name: "Lily Doe", attributes: { DOB: "2001-02-14" } },
-            { name: "Ethan Doe", attributes: { DOB: "2004-10-23" } },
-          ],
-        },
-        {
-          name: "Margaret Doe",
-          attributes: { DOB: "1978-06-16" },
-          children: [{ name: "Zoe Brown", attributes: { DOB: "2006-07-07" } }],
-        },
-        {
-          name: "Thomas Doe",
-          attributes: { DOB: "1980-11-01" },
-          children: [
-            { name: "Daniel Doe", attributes: { DOB: "2010-01-05" } },
-            { name: "Grace Doe", attributes: { DOB: "2013-06-22" } },
-          ],
-        },
-      ],
-    },
-  ],
-};
 
 // Custom node rendering function to match the UI
 const renderCustomNodeElement = ({
@@ -99,19 +24,19 @@ const renderCustomNodeElement = ({
         height="120"
         x="-150"
         y="-40"
-        fill="#C8FF53" // Updated background color to match the neon green
-        stroke="none" // No border as per the image
+        fill="#C8FF53"
+        stroke="none"
         rx="5"
         ry="5"
-        onClick={() => onViewMember(nodeDatum)} // Show member details on click
+        onClick={() => onViewMember(nodeDatum)}
         style={{ cursor: "pointer" }}
       />
       <text
-        fill="#000000" // Black color for the main text
+        fill="#000000"
         x="-120"
         y="15"
         textAnchor="right"
-        fontSize="30" // Larger font size for the name
+        fontSize="30"
         fontWeight="bold"
       >
         {name}
@@ -119,27 +44,25 @@ const renderCustomNodeElement = ({
       <text fill="#545454" x="-120" y="50" textAnchor="right" fontSize="22">
         {dob}
       </text>
-      {/* "+" button to add a family member */}
       <text
-        fill="#043500" // Black color for the button
+        fill="#043500"
         x="120"
         y="0"
         textAnchor="middle"
-        fontSize="40" // Larger font size for the "+"
+        fontSize="40"
         fontWeight="middle"
         onClick={onAddMember}
         style={{ cursor: "pointer" }}
       >
         +
       </text>
-      {/* Toggle button */}
       {hasChildren && (
         <text
-          fill="#043500" // Black color for the button
+          fill="#043500"
           x="120"
           y="60"
           textAnchor="middle"
-          fontSize="30" // Larger font size for the "+"
+          fontSize="30"
           fontWeight="middle"
           onClick={toggleNode}
           style={{ cursor: "pointer" }}
@@ -154,9 +77,71 @@ const renderCustomNodeElement = ({
 // Family Tree Component
 const FamilyTree = () => {
   const [translate] = useState({ x: 400, y: 100 });
+  const [familyTreeData, setFamilyTreeData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showMemberInfo, setShowMemberInfo] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    dob: "",
+    relation: "Spouse",
+  });
+
+  const getTokenFromCookies = () => {
+    const name = "token=";
+    const decodedCookie = document.cookie;
+    console.log("cookie is ", document.cookie);
+    const cookies = decodedCookie.split(";");
+    console.log(cookies);
+    for (let i = 0; i < cookies.length; i++) {
+      let cookie = cookies[i].trim();
+      if (cookie.indexOf(name) === 0) {
+        console.log(name.length, cookie.length);
+        return cookie.substring(name.length, cookie.length);
+      }
+    }
+    return "";
+  };
+
+  useEffect(() => {
+    const fetchFamilyTreeData = async () => {
+      try {
+        const token = getTokenFromCookies();
+        console.log(token);
+
+        if (!token) {
+          throw new Error("Token not found");
+        }
+
+        const config = {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        };
+
+        console.log("token sent.....");
+
+        const response = await axios.get(
+          "http://localhost:5000/api/families",
+          config
+        );
+        setFamilyTreeData(response.data);
+      } catch (error) {
+        console.error("Error fetching family tree data:", error);
+        setError("Failed to fetch family tree data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFamilyTreeData();
+  }, []);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>{error}</div>;
 
   // Show add form pop-up
   const handleAddMember = () => {
@@ -180,12 +165,35 @@ const FamilyTree = () => {
     setSelectedMember(null);
   };
 
+  // Handle form input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/families",
+        formData,
+        { withCredentials: true }
+      );
+      console.log(response.data);
+      // Close form and reset data on successful submission
+      closeAddForm();
+    } catch (error) {
+      console.error("Error adding family member:", error);
+    }
+  };
+
   return (
     <div
       id="treeWrapper"
       className="w-full h-screen bg-green-100 overflow-hidden relative"
     >
-      {/* Family Tree */}
       <Tree
         data={familyTreeData}
         translate={translate}
@@ -230,22 +238,33 @@ const FamilyTree = () => {
             <h2 className="text-2xl font-bold mb-4 text-green-800">
               Add Family Member
             </h2>
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <input
                 type="text"
+                name="name"
                 placeholder="Name"
+                value={formData.name}
+                onChange={handleInputChange}
                 className="w-full p-2 border border-green-300 rounded-md focus:outline-none focus:border-green-500"
               />
               <input
                 type="date"
+                name="dob"
                 placeholder="DOB"
+                value={formData.dob}
+                onChange={handleInputChange}
                 className="w-full p-2 border border-green-300 rounded-md focus:outline-none focus:border-green-500"
               />
-              <input
-                type="text"
-                placeholder="Relation"
+              <select
+                name="relation"
+                value={formData.relation}
+                onChange={handleInputChange}
                 className="w-full p-2 border border-green-300 rounded-md focus:outline-none focus:border-green-500"
-              />
+              >
+                <option value="Spouse">Spouse</option>
+                <option value="Husband">Husband</option>
+                <option value="Children">Children</option>
+              </select>
               <button
                 type="submit"
                 className="w-full p-2 bg-green-500 text-white rounded-md hover:bg-green-600"
@@ -273,7 +292,6 @@ const FamilyTree = () => {
             <p className="text-green-700">
               <strong>DOB:</strong> {selectedMember.attributes?.DOB}
             </p>
-            {/* Add more detailed info fields here if needed */}
           </div>
         </div>
       )}

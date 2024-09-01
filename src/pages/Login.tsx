@@ -3,7 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import loginImg from "../assets/login-img.png"; // Replace with your image path
 
-const LoginPage = () => {
+const LoginPage = ({ token, setToken }) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -41,7 +41,9 @@ const LoginPage = () => {
             password,
           }
         );
-        console.log("Login Success:", response.data);
+        setToken(response.data.token);
+        console.log(token);
+        console.log("Login Success:", response.data.token, response);
         // Handle success (e.g., save token, redirect)
         navigate("/tree"); // Redirect to /tree route
       }

@@ -3,14 +3,14 @@ import TopNavbar from "../components/TopNavbar";
 import SidebarAndToolbar from "../components/SidebarAndToolbar";
 import FamilyTree from "../components/FamilyTree";
 
-function FamilyTreeMain() {
+function FamilyTreeMain({ token }) {
   return (
     <div className="min-h-screen bg-gray-50">
       <TopNavbar />
       <div className="flex">
         {/* <SidebarAndToolbar /> */}
         <div className="flex-1">
-          <FamilyTree />
+          <FamilyTree token={token} />
         </div>
       </div>
     </div>

@@ -75,7 +75,7 @@ const renderCustomNodeElement = ({
 };
 
 // Family Tree Component
-const FamilyTree = () => {
+const FamilyTree = ({ token }) => {
   const [translate] = useState({ x: 400, y: 100 });
   const [familyTreeData, setFamilyTreeData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -83,34 +83,26 @@ const FamilyTree = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showMemberInfo, setShowMemberInfo] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
+  const [x, y] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
     dob: "",
     relation: "Spouse",
   });
 
-  const getTokenFromCookies = () => {
-    const name = "token=";
-    const decodedCookie = decodeURIComponent(document.cookie);
-    const cookies = decodedCookie.split(";");
-    for (let i = 0; i < cookies.length; i++) {
-      let cookie = cookies[i].trim();
-      if (cookie.indexOf(name) === 0) {
-        return cookie.substring(name.length, cookie.length);
-      }
-    }
-    return "";
-  };
-
   useEffect(() => {
     const fetchFamilyTreeData = async () => {
+      console.log(token);
       try {
-        // No need to manually retrieve the token from cookies; it is automatically included when withCredentials is true
         const config = {
+          headers: {
+            Authorization: `Bearer ${token}`, // Include the token in the request headers
+          },
           withCredentials: true, // Include cookies in the request
         };
 
-        // Make a request to fetch family data
+        console.log("Fetching with config", config);
+
         const response = await axios.get(
           "http://localhost:5000/api/families",
           config
@@ -126,7 +118,7 @@ const FamilyTree = () => {
     };
 
     fetchFamilyTreeData();
-  }, []);
+  }, [token]);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
@@ -243,7 +235,7 @@ const FamilyTree = () => {
                 onChange={handleInputChange}
                 className="w-full p-2 border border-green-300 rounded-md focus:outline-none focus:border-green-500"
               />
-              <select
+              {/* <select
                 name="relation"
                 value={formData.relation}
                 onChange={handleInputChange}
@@ -252,7 +244,7 @@ const FamilyTree = () => {
                 <option value="Spouse">Spouse</option>
                 <option value="Husband">Husband</option>
                 <option value="Children">Children</option>
-              </select>
+              </select> */}
               <button
                 type="submit"
                 className="w-full p-2 bg-green-500 text-white rounded-md hover:bg-green-600"

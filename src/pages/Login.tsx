@@ -23,7 +23,7 @@ const LoginPage = ({ token, setToken }) => {
       if (isSignUp) {
         // Sign Up Request
         const response = await axios.post(
-          "http://localhost:5000/api/auth/register",
+          "http://3.110.209.170:3000/api/auth/register",
           {
             username,
             email,
@@ -35,7 +35,7 @@ const LoginPage = ({ token, setToken }) => {
       } else {
         // Login Request
         const response = await axios.post(
-          "http://localhost:5000/api/auth/login",
+          "http://3.110.209.170:3000/api/auth/login",
           {
             email,
             password,

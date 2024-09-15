@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Tree from "react-d3-tree";
-import axios from "axios"; // Import axios for API calls
-import { FaArrowDown, FaArrowUp } from "react-icons/fa";
-import Cookies from "js-cookie";
-
-// Sample Family Tree Data
+import axios from "axios";
+import AddFamilies from "./AddFamilies";
 
 // Custom node rendering function to match the UI
 const renderCustomNodeElement = ({
@@ -12,7 +9,10 @@ const renderCustomNodeElement = ({
   toggleNode,
   onAddMember,
   onViewMember,
+  setSelectedParentNode, // Function to set the selected parent node
 }) => {
+  if (!nodeDatum) return null;
+
   const { name, attributes, children } = nodeDatum;
   const dob = attributes?.DOB || "";
   const hasChildren = children && children.length > 0;
@@ -51,7 +51,10 @@ const renderCustomNodeElement = ({
         textAnchor="middle"
         fontSize="40"
         fontWeight="middle"
-        onClick={onAddMember}
+        onClick={() => {
+          onAddMember(nodeDatum);
+          setSelectedParentNode(nodeDatum.member_id); // Set the selected parent node // Open the add member form
+        }}
         style={{ cursor: "pointer" }}
       >
         +
@@ -80,36 +83,35 @@ const FamilyTree = ({ token }) => {
   const [familyTreeData, setFamilyTreeData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [showMemberInfo, setShowMemberInfo] = useState(false);
-  const [selectedMember, setSelectedMember] = useState(null);
-  const [x, y] = useState(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    dob: "",
-    relation: "Spouse",
-  });
+  const [selectedParentNode, setSelectedParentNode] = useState(null); // Track selected parent node
+  const [showAddFamiliesForm, setShowAddFamiliesForm] = useState(false); // Track form visibility
+  const [familyTreeExist, setFamilyTreeExist] = useState(false);
+  // const [showAddForm, setShowAddForm] = useState(false);
 
   useEffect(() => {
     const fetchFamilyTreeData = async () => {
-      console.log(token);
+      //console.log("Fetching family tree data with token:", token);
+
       try {
         const config = {
           headers: {
-            Authorization: `Bearer ${token}`, // Include the token in the request headers
+            Authorization: `Bearer ${token}`,
           },
-          withCredentials: true, // Include cookies in the request
+          withCredentials: true,
         };
 
-        console.log("Fetching with config", config);
-
         const response = await axios.get(
-          "http://localhost:5000/api/families",
+          "http://3.110.209.170:3000/api/families",
           config
         );
-
+        //console.log("Fetched family tree data:", response.data);
         setFamilyTreeData(response.data);
+        setFamilyTreeExist(true);
       } catch (error) {
+        setSelectedParentNode("1");
+        if (!familyTreeData) {
+          setShowAddFamiliesForm(true);
+        }
         console.error("Error fetching family tree data:", error);
         setError("Failed to fetch family tree data.");
       } finally {
@@ -120,161 +122,138 @@ const FamilyTree = ({ token }) => {
     fetchFamilyTreeData();
   }, [token]);
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>{error}</div>;
+  useEffect(() => {
+    if (familyTreeData) {
+      //console.log("Family tree data updated:", familyTreeData);
+    }
+  }, [familyTreeData]);
 
-  // Show add form pop-up
-  const handleAddMember = () => {
-    setShowAddForm(true);
+  const handleAddMember = (parentNode) => {
+    setSelectedParentNode(parentNode.member_id);
+    //console.log(parentNode.member_id);
+    setShowAddFamiliesForm(true); // Show the form
   };
 
-  // Close add form pop-up
-  const closeAddForm = () => {
-    setShowAddForm(false);
+  const handleAddNewMember = (newMember) => {
+    //console.log("New member is:", newMember);
+
+    // const updateTree = (node) => {
+    //   if (selectedParentNode) {
+    //     if (node.member_id === selectedParentNode.member_id) {
+    //       //console.log("Adding new member to parent:", node);
+    //       node.children = [...(node.children || []), newMember];
+    //       //console.log("Updated children:", node.children);
+    //     }
+    //   } else if (node.children) {
+    //     node.children.forEach(updateTree);
+    //   }
+    // };
+
+    setFamilyTreeData(() => {
+      // Create a deep copy of the family tree data
+      const newData = JSON.parse(JSON.stringify(newMember));
+      // Update the tree
+      setFamilyTreeData(newData);
+      //console.log("Updated familyTreeData before setting state:", newData);
+      return newData;
+    });
+
+    setShowAddFamiliesForm(false);
+    setSelectedParentNode(null);
   };
 
-  // Show member info pop-up
-  const handleViewMember = (member) => {
-    setSelectedMember(member);
-    setShowMemberInfo(true);
-  };
-
-  // Close member info pop-up
-  const closeMemberInfo = () => {
-    setShowMemberInfo(false);
-    setSelectedMember(null);
-  };
-
-  // Handle form input changes
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const saveFamilyTree = async () => {
+    if (!familyTreeData) {
+      console.error("No family tree data to save.");
+      return;
+    }
 
     try {
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      };
+
       const response = await axios.post(
-        "http://localhost:5000/api/families",
-        formData,
-        { withCredentials: true }
+        "http://3.110.209.170:3000/api/families",
+        familyTreeData,
+        config
       );
-      console.log(response.data);
-      // Close form and reset data on successful submission
-      closeAddForm();
+
+      if (response.status === 201) {
+        //console.log("Family tree saved successfully:", response.data);
+        alert("Family tree saved successfully!");
+      } else {
+        console.error("Failed to save the family tree:", response.data);
+      }
     } catch (error) {
-      console.error("Error adding family member:", error);
+      console.error("Error saving the family tree:", error);
+      alert("An error occurred while saving the family tree.");
     }
   };
+
+  const handleViewMember = (nodeDatum) => {
+    // Logic for viewing member details (perhaps open a modal with member data)
+    //console.log("Viewing member:", nodeDatum);
+  };
+
+  if (loading) return <div>Loading...</div>;
 
   return (
     <div
       id="treeWrapper"
       className="w-full h-screen bg-green-100 overflow-hidden relative"
     >
-      <Tree
-        data={familyTreeData}
-        translate={translate}
-        orientation="vertical"
-        pathFunc="elbow"
-        collapsible={true}
-        zoomable={true}
-        pan={true}
-        zoom={0.8}
-        scaleExtent={{ min: 0.1, max: 2 }}
-        nodeSize={{ x: 400, y: 200 }}
-        renderCustomNodeElement={(rd3tProps) =>
-          renderCustomNodeElement({
-            ...rd3tProps,
-            toggleNode: rd3tProps.toggleNode,
-            onAddMember: handleAddMember,
-            onViewMember: handleViewMember,
-          })
-        }
-        styles={{
-          nodes: {
-            node: { circle: { fill: "#81c784" } },
-            leafNode: { circle: { fill: "#66bb6a" } },
-          },
-          links: {
-            stroke: "#2e7d32",
-            strokeWidth: 2,
-          },
-        }}
-      />
-
-      {/* Add Member Form Pop-up */}
-      {showAddForm && (
-        <div className="absolute inset-0 flex justify-center items-center bg-black bg-opacity-50 z-10">
-          <div className="bg-white rounded-lg p-6 w-1/3 shadow-md relative">
-            <button
-              className="absolute top-2 right-2 text-red-500"
-              onClick={closeAddForm}
-            >
-              x
-            </button>
-            <h2 className="text-2xl font-bold mb-4 text-green-800">
-              Add Family Member
-            </h2>
-            <form className="space-y-4" onSubmit={handleSubmit}>
-              <input
-                type="text"
-                name="name"
-                placeholder="Name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-green-300 rounded-md focus:outline-none focus:border-green-500"
-              />
-              <input
-                type="date"
-                name="dob"
-                placeholder="DOB"
-                value={formData.dob}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-green-300 rounded-md focus:outline-none focus:border-green-500"
-              />
-              {/* <select
-                name="relation"
-                value={formData.relation}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-green-300 rounded-md focus:outline-none focus:border-green-500"
-              >
-                <option value="Spouse">Spouse</option>
-                <option value="Husband">Husband</option>
-                <option value="Children">Children</option>
-              </select> */}
-              <button
-                type="submit"
-                className="w-full p-2 bg-green-500 text-white rounded-md hover:bg-green-600"
-              >
-                Add
-              </button>
-            </form>
-          </div>
-        </div>
+      {familyTreeData && (
+        <Tree
+          data={familyTreeData} // This should re-render when familyTreeData changes
+          translate={translate}
+          orientation="vertical"
+          pathFunc="elbow"
+          collapsible={true}
+          zoomable={true}
+          pan={true}
+          zoom={0.8}
+          scaleExtent={{ min: 0.1, max: 2 }}
+          nodeSize={{ x: 400, y: 200 }}
+          renderCustomNodeElement={(rd3tProps) =>
+            renderCustomNodeElement({
+              ...rd3tProps,
+              setSelectedParentNode, // Pass the function to set the selected parent node
+              onAddMember: handleAddMember,
+              onViewMember: handleViewMember,
+            })
+          }
+          styles={{
+            nodes: {
+              node: { circle: { fill: "#81c784" } },
+              leafNode: { circle: { fill: "#66bb6a" } },
+            },
+            links: {
+              stroke: "#2e7d32",
+              strokeWidth: 2,
+            },
+          }}
+        />
       )}
 
-      {/* Member Info Pop-up */}
-      {showMemberInfo && selectedMember && (
-        <div className="absolute inset-0 flex justify-center items-center bg-black bg-opacity-50 z-10">
-          <div className="bg-white rounded-lg p-6 w-1/3 shadow-md relative">
-            <button
-              className="absolute top-2 right-2 text-red-500"
-              onClick={closeMemberInfo}
-            >
-              x
-            </button>
-            <h2 className="text-2xl font-bold mb-4 text-green-800">
-              {selectedMember.name}
-            </h2>
-            <p className="text-green-700">
-              <strong>DOB:</strong> {selectedMember.attributes?.DOB}
-            </p>
-          </div>
-        </div>
+      {showAddFamiliesForm && (
+        <AddFamilies
+          onAddNewMember={handleAddNewMember}
+          parentNode={selectedParentNode}
+          setShowAddFamiliesForm={setShowAddFamiliesForm}
+          familyTreeData={familyTreeData}
+          familyTreeExist={familyTreeExist}
+          token={token}
+        />
       )}
+
+      <button className="fixed top-20 right-5" onClick={saveFamilyTree}>
+        Save
+      </button>
     </div>
   );
 };
